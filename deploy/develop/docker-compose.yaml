@@ -10,29 +10,27 @@ services:
             MONGO_URL: 'mongo'
             MONGO_DATABASE: 'movies'
 
-    mongo:
-        container_name: mongo
-        image: mongo:latest
-        environment:
-            - MONGO_DATA_DIR=/data/db
-            - MONGO_LOG_DIR=/dev/null
-        volumes:
-            - ../../data/db:/data/db
-    
+    # mongo:
+    #     container_name: mongo
+    #     image: mongo:latest
+    #     environment:
+    #         - MONGO_DATA_DIR=/data/db
+    #         - MONGO_LOG_DIR=/dev/null
+    #     volumes:
+    #         - ../../data/db:/data/db
+
     master:
-        image: 'christianbladescb/locustio'
-        container_name: 'master'
-        restart: always
-        command: " -f locustfile.py --host=http://movies-api:3000 --master"
+        image: locustio/locust
         ports:
         - "8089:8089"
         volumes:
-        - ../../source/locust/benchmarks:/locust
-
-    slave:
-        image: 'christianbladescb/locustio'
-        container_name: 'slave'
-        restart: 'always'
-        command: " -f locustfile.py --host=http://movies-api:3000 --slave --master-host=master"
+        - ../../source/locust/benchmarks:/mnt/locust
+        command: -f /mnt/locust/locustfile.py --master -H http://movies-api:3000
+    
+    worker:
+        image: locustio/locust
+        deploy:
+            replicas: 8
         volumes:
-        - ../../source/locust/benchmarks:/locust
+        - ../../source/locust/benchmarks:/mnt/locust
+        command: -f /mnt/locust/locustfile.py --worker --master-host master
